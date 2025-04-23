@@ -1,21 +1,21 @@
 package com.SpringBatch.Ejercicio_1.validator;
-import com.SpringBatch.Ejercicio_1.model.Employee;
-import com.SpringBatch.Ejercicio_1.processor.EmployeeItemProcessor;
 
+import com.SpringBatch.Ejercicio_1.model.Employee;
 import org.springframework.batch.item.ItemProcessor;
 
 public class EmployeeValidatorProcessor implements ItemProcessor<Employee, Employee> {
 
-	private final EmployeeItemProcessor delegate = new EmployeeItemProcessor();
-	
 	@Override
     public Employee process(Employee employee) throws Exception {
-        // Validación personalizada
-        if (Integer.parseInt(employee.getUserId()) < 0) {
-            throw new Exception("Employee id cannot be negative!");
+        try {
+            int id = Integer.parseInt(employee.getUserId());
+            if (id < 0) {
+                throw new Exception("Employee id cannot be negative!");
+            }
+        } catch (NumberFormatException e) {
+            throw new Exception("Invalid userId: must be numeric", e);
         }
 
-        // Procesamiento con el delegado
-        return delegate.process(employee);
+        return employee; // ← Devuelve el objeto si está todo bien
     }
 }

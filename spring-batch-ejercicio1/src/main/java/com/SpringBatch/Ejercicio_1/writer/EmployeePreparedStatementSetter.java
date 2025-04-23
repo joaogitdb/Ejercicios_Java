@@ -8,10 +8,10 @@ import java.sql.SQLException;
 
 public class EmployeePreparedStatementSetter implements ItemPreparedStatementSetter<Employee> {
 
-    @Override
+	@Override
     public void setValues(Employee employee, PreparedStatement ps) throws SQLException {
         ps.setString(1, employee.getUserName());
-        ps.setInt(2, Integer.parseInt(employee.getUserId()));
+        ps.setString(2, employee.getUserId()); // userId ahora es String
         ps.setDate(3, new java.sql.Date(employee.getTransactionDate().getTime()));
         ps.setInt(4, employee.getTransactionAmount());
     }
