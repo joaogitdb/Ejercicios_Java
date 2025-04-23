@@ -1,0 +1,11 @@
+# Ignorar la carpeta de configuración de Eclipse
+.metadata/
+
+# Ignorar archivos de proyecto de Eclipse
+.project
+
+# Ignorar archivos comprimidos
+*.zip
+
+# Ignorar otros archivos temporales que no deseas versionar
+*.log
