@@ -1,5 +1,9 @@
 package com.SpringBatch.Ejercicio_1.config;
 
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Date;
+
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
@@ -16,13 +20,14 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
+
 import com.SpringBatch.Ejercicio_1.listener.EmployeeSkipListener;
 import com.SpringBatch.Ejercicio_1.model.Employee;
 import com.SpringBatch.Ejercicio_1.validator.EmployeeValidatorProcessor;
@@ -56,16 +61,25 @@ public class BatchConfiguration {
 
     @Bean
     public FlatFileItemReader<Employee> reader() {
-    			// Cambiamos el reader para usar el DataSource
+        // Creamos un mapper con formato dd/MM/yyyy
+        BeanWrapperFieldSetMapper<Employee> mapper = new BeanWrapperFieldSetMapper<>();
+        mapper.setTargetType(Employee.class);
+
+        // Registramos un editor para Date
+        SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+        df.setLenient(false);
+        mapper.setCustomEditors(
+            Collections.singletonMap(Date.class,
+                new CustomDateEditor(df, false))
+        );
+
         return new FlatFileItemReaderBuilder<Employee>()
-                .name("employeeItemReader")
-                .resource(new ClassPathResource("employees.csv"))
-                .delimited()
-                .names("userName", "userId", "transactionDate", "transactionAmount")
-                .fieldSetMapper(new BeanWrapperFieldSetMapper<>() {{
-                    setTargetType(Employee.class);
-                }})
-                .build();
+            .name("employeeItemReader")
+            .resource(new ClassPathResource("employees.csv"))
+            .delimited()
+            .names("userName", "userId", "transactionDate", "transactionAmount")
+            .fieldSetMapper(mapper)
+            .build();
     }
 
     @Bean
@@ -103,6 +117,7 @@ public class BatchConfiguration {
                 .skipLimit(100) // Para ajustar el valor si esperamos más o menos errores
                 .listener(skipListener()) // Añadiremos esto abajo para pasar el listener
                 .transactionManager(transactionManager) // Añadimos el transactionManager
+                .allowStartIfComplete(true) // Permitir reiniciar el job si ya ha sido completado
                 .repository(jobRepository) // Añadimos el jobRepository
                 .build(); // Añadimos el jobRepository
     }

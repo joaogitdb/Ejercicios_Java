@@ -7,63 +7,50 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ComponentScan;
 
 import com.ejercicio.ejercicio3.CustomEmployeeReader;
 import com.ejercicio.ejercicio3.CustomEmployeeWriter;
-import com.ejercicio.ejercicio3.Employee;
-import com.ejercicio.ejercicio3.EmployeeProcessor;
 import com.ejercicio.ejercicio3.dao.EmployeeDao;
+import com.ejercicio.ejercicio3.Employee;
 
 @Configuration
 @EnableBatchProcessing
+@ComponentScan("com.ejercicio.ejercicio3.dao")  // para que detecte tu EmployeeDao
 public class BatchConfig {
-	
-	//Inyacta las funciones de Spring Batch y las configura
-	private final JobBuilderFactory jobs;
-	private final StepBuilderFactory steps;
-	private final EmployeeDao employeeDao;
-	
-	public BatchConfig (JobBuilderFactory jobs, StepBuilderFactory steps, EmployeeDao employeeDao) {
-		this.jobs = jobs;
-		this.steps = steps;
-		this.employeeDao = employeeDao;
-		
-	}
-	
-	@Bean
-	public CustomEmployeeReader customEmployeeReader() {
-		CustomEmployeeReader reader = new CustomEmployeeReader();
-		reader.setEmployeeDao(employeeDao);
-		return reader;
-	}
-	
-	@Bean
-	public EmployeeProcessor employeeProcessor() {
-		return new EmployeeProcessor();
-	}
-	
-	@Bean
-	public CustomEmployeeWriter customEmployeeWriter() {
-		CustomEmployeeWriter writer = new CustomEmployeeWriter();
-		writer.setEmployeeDao(employeeDao);
-		return writer;
-	}
-	
-	@Bean
-	public Step step1() {
-		return steps.get("step1")
-				.<Employee, Employee>chunk(10)  // Define el tamaño del chunk(intervalo de registros a procesar)
-				.reader(customEmployeeReader())
-				.processor(employeeProcessor())
-				.writer(customEmployeeWriter())
-				.build();
-	}
-	
-	@Bean
-	public Job employeeJob() {
-		return jobs.get("employeeJob")
-				.start(step1())
-				.build();
-	}
 
+    // 1) Define el reader como bean
+    @Bean
+    public CustomEmployeeReader reader(EmployeeDao dao) {
+        CustomEmployeeReader r = new CustomEmployeeReader();
+        r.setEmployeeDao(dao);
+        return r;
+    }
+
+    // 2) Define el writer como bean
+    @Bean
+    public CustomEmployeeWriter writer(EmployeeDao dao) {
+        CustomEmployeeWriter w = new CustomEmployeeWriter();
+        w.setEmployeeDao(dao);
+        return w;
+    }
+
+    // 3) El step inyecta ya reader y writer
+    @Bean
+    public Step step1(StepBuilderFactory steps,
+                      CustomEmployeeReader reader,
+                      CustomEmployeeWriter writer) {
+        return steps.get("step1")
+                    .<Employee, Employee>chunk(10)
+                    .reader(reader)
+                    .writer(writer)
+                    .build();
+    }
+
+    @Bean
+    public Job employeeJob(JobBuilderFactory jobs, Step step1) {
+        return jobs.get("employeeJob")
+                   .start(step1)
+                   .build();
+    }
 }
