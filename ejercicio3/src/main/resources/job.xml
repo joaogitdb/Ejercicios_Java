@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+          http://www.springframework.org/schema/beans        http://www.springframework.org/schema/beans/spring-beans.xsd
+          http://www.springframework.org/schema/batch        http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+	<!-- Bean para el DAO (usado por Reader y Writer) -->
+	<bean id="employeeDao"
+		class="com.ejercicio.ejercicio3.dao.EmployeeDao" />
+
+	<!-- Custom Reader que usa JPA -->
+	<bean id="customEmployeeReader"
+		class="com.ejercicio.ejercicio3.CustomEmployeeReader">
+		<property name="employeeDao" ref="employeeDao" />
+	</bean>
+
+	<!-- Processor -->
+	<bean id="employeeProcessor"
+		class="com.ejercicio.ejercicio3.EmployeeProcessor" />
+
+	<!-- Custom Writer que usa JPA -->
+	<bean id="customEmployeeWriter"
+		class="com.ejercicio.ejercicio3.CustomEmployeeWriter">
+		<property name="employeeDao" ref="employeeDao" />
+	</bean>
+
+	<!-- Definición del JobRepository como FactoryBean -->
+	<bean id="jobRepositoryFactoryBean"
+		class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+		<property name="transactionManager" ref="transactionManager" />
+	</bean>
+
+	<!-- Exponer el producto del FactoryBean (JobRepository) -->
+	<bean id="jobRepository"
+		class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+		<property name="transactionManager" ref="transactionManager" />
+	</bean>
+
+	<!-- Definición del JobExplorer: se inyecta el FactoryBean, no el producto -->
+	<bean id="jobExplorer"
+		class="org.springframework.batch.core.explore.support.MapJobExplorerFactoryBean">
+		<constructor-arg ref="&amp;jobRepositoryFactoryBean" />
+	</bean>
+
+	<!-- Configuración del Job Launcher -->
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+	</bean>
+
+	<!-- Definición del Job y el Step -->
+	<batch:job id="employeeJob">
+		<batch:step id="step1">
+			<batch:tasklet>
+				<batch:chunk reader="customEmployeeReader"
+					processor="employeeProcessor" writer="customEmployeeWriter"
+					commit-interval="1" />
+			</batch:tasklet>
+		</batch:step>
+	</batch:job>
+
+</beans>
